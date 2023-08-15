@@ -33,9 +33,11 @@ def threaded(client_socket, addr):
 
             ## chat to client connecting client ##
             ## chat to client connecting client except person sending message ##
-            for client in client_sockets:
+            i = 0
+            for client in client_sockets[:, 0]:
                 if client != client_socket:
-                    client.send(data)
+                    client.send(client_sockets[i, 1] + '\n chat :' + data)
+                i += 1
         
         except ConnectionResetError as e:
             print('>> Disconnected by ' + addr[0], ':', addr[1])
@@ -43,18 +45,24 @@ def threaded(client_socket, addr):
     
     if client_socket in client_sockets:
         client_sockets.remove(client_socket)
-        print('remove client list : ', len(client_sockets))
+        print('remove client list : ', len(client_sockets[:, 0]))
 
     client_socket.close()
 
 try: # client의 접속 요청이 들어옴
     while True:
         print('>> Wait')
-
         client_socket, addr = server_socket.accept()
-        client_sockets.append(client_socket)
-        start_new_thread(threaded, (client_socket, addr))
-        print("참가자 수 : ", len(client_sockets))
+        data = client_socket.recv(1024).decode()
+        
+        
+        if len(client_sockets) < 4 :
+            client_sockets.append([client_socket, data])
+            start_new_thread(threaded, (client_socket, addr))
+            print("참가자 수 : ", len(client_sockets))
+            print(client_sockets)
+        else : 
+            client_socket.send('FullServer : ' + data)
 except Exception as e:
     print('에러 : ', e)
 
